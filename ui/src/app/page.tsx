@@ -14,8 +14,8 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
   const minRelevance = searchParams.minRelevance ? parseFloat(searchParams.minRelevance) : 0;
   const since = searchParams.since;
 
-  let papers = [];
-  let error = null;
+  let papers: import("@/lib/db").Paper[] = [];
+  let error: string | null = null;
 
   try {
     papers = await getPapers({ source, minRelevance, limit: 100, since });
