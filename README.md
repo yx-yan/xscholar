@@ -1,81 +1,133 @@
-# 🧠 Xscholar
+# 📚 Xscholar
 
-**AI Research Intelligence Agent for OpenClaw**
+**An OpenClaw skill that turns your AI agent into a research intelligence layer.**
 
-Xscholar monitors academic paper sources daily, scores papers against your research focus, and builds a permanent searchable knowledge graph — so you never lose a paper again.
+Xscholar monitors academic paper sources daily, scores papers against your research focus, and builds a permanent searchable knowledge graph — so you can ask your agent questions like *"what's new in diffusion models this week?"* and get real answers backed by actual papers.
 
 > Built at a hackathon. Designed to grow.
 
 ---
 
-## What it does
-
-- 📰 **Fetches papers daily** from arxiv, Semantic Scholar, PubMed, ACL, and more
-- 🎯 **Scores relevance** against your research profile (keywords, topics, anti-keywords)
-- 🧠 **Indexes everything** into mem9 — searchable semantically across all sessions
-- 🔗 **Cross-references** new papers against your entire archive
-- 💬 **Answers questions** like "What was that sparse-view CT paper from last month?"
-
-## Requirements
-
-- [OpenClaw](https://github.com/openclaw/openclaw) with mem9 plugin configured
-- Node.js 18+
-
-## Install
-
-```bash
-git clone https://github.com/YOUR_USERNAME/xscholar
-cd xscholar
-```
-
-Then drop the folder into your OpenClaw workspace or skills directory.
-
-## Setup
-
-```bash
-# 1. Fill in your research profile
-cp config/research-profile.md config/my-profile.md
-nano config/my-profile.md
-
-# 2. Test the fetcher
-node scripts/fetch-papers.js --dry-run
-
-# 3. Schedule daily updates (in OpenClaw)
-# /cron add "0 8 * * *" node /path/to/xscholar/scripts/fetch-papers.js
-```
-
-## Usage
-
-Once running, just ask:
-
-- *"What papers came in today?"*
-- *"Find papers related to diffusion models for medical imaging"*
-- *"What was that 3D U-Net paper from two weeks ago?"*
-- *"Show me everything tagged high-priority"*
-
-## Architecture
+## How it works
 
 ```
-Sources → Fetcher → Relevance Scorer → mem9 Vault
-                                           ↑
-                              Cross-Reference Engine
+Your research profile
+        ↓
+Fetch papers (arXiv, Semantic Scholar, ...)
+        ↓
+Score by relevance → save to TiDB Cloud
+        ↓
+Cross-reference + index into mem9
+        ↓
+Ask your agent anything, across sessions
 ```
 
 Three memory layers:
-1. **Temporal Log** — daily JSON snapshots, never deleted
-2. **Semantic Vault** — mem9 vector index, searchable by concept
-3. **Preference Anchor** — your research profile, drives all filtering
+- **TiDB Cloud** — structured SQL, full paper data, filterable by source/date/score
+- **mem9** — semantic vector search, cross-session context, research thread detection
+- **Daily logs** — raw JSON snapshots, fallback when DB isn't configured
+
+---
+
+## Install
+
+Requires [OpenClaw](https://openclaw.ai) with the mem9 plugin configured.
+
+```bash
+git clone https://github.com/yx-yan/xscholar
+cd xscholar
+cp .env.example .env
+```
+
+Edit `.env`:
+```env
+MEM9_API_KEY=your_mem9_api_key        # required
+TIDB_HOST=...                          # optional, for SQL persistence
+TIDB_USER=...
+TIDB_PASSWORD=...
+TIDB_DATABASE=xscholar
+```
+
+Then run setup:
+```bash
+node scripts/setup.js
+```
+
+---
+
+## Configure
+
+Edit `config/research-profile.md` — set your keywords, topics, sources, and schedule.
+
+---
+
+## Run
+
+```bash
+# Fetch today's papers
+node scripts/fetch-papers.js
+
+# Index into mem9 (cross-reference + intelligence layer)
+node scripts/index-to-mem9.js
+
+# Query from your agent
+node scripts/query.js --q "sparse-view reconstruction" --limit 5
+node scripts/query.js --status   # check last fetch time
+```
+
+---
+
+## Agent usage
+
+Once installed as an OpenClaw skill, ask your agent:
+
+- *"What papers came in today?"*
+- *"Find me recent work on diffusion models for segmentation"*
+- *"Any high-relevance papers from this week?"*
+- *"What was that 3D transformer paper from last month?"*
+- *"Summarize what's happening in my research area"*
+
+The agent uses `query.js` to fetch results and synthesizes natural language answers.
+
+---
+
+## Heartbeat (proactive updates)
+
+Add to your `HEARTBEAT.md` to get proactive notifications:
+
+```markdown
+- Check xscholar status: node xscholar/scripts/query.js --status
+  If fetchDue is true: run fetch + index pipeline
+  If new papers with relevance >= 0.6: notify user
+```
+
+---
+
+## Web UI
+
+A Next.js dashboard is included in `ui/`:
+
+```bash
+cd ui
+cp .env.local.example .env.local  # add TiDB creds
+npm install && npm run dev
+# → http://localhost:3000
+```
+
+---
 
 ## Sources
 
-| Source | Command |
-|--------|---------|
-| arxiv | default |
-| Semantic Scholar | `--source semantic_scholar` |
+| Source | Status |
+|--------|--------|
+| arXiv | ✅ |
+| Semantic Scholar | ✅ |
 | PubMed | coming soon |
 | ACL Anthology | coming soon |
 | CVF Open Access | coming soon |
 
+---
+
 ## License
 
-MIT
+MIT — built to be forked, extended, and made your own.

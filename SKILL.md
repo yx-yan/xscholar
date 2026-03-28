@@ -1,146 +1,126 @@
-# Xscholar — AI Research Intelligence Agent
+---
+name: xscholar
+description: >
+  AI research intelligence agent. Monitors academic paper sources (arXiv, Semantic Scholar, etc.),
+  scores papers against your research profile, and builds a searchable knowledge graph via mem9.
+  Use when: user asks about recent papers, research topics, literature search, or wants to
+  track a research area over time. Triggers on: "what papers", "recent research", "find papers",
+  "literature on", "any new work on", "what's new in", daily heartbeat (runs fetch if due).
+metadata:
+  openclaw:
+    emoji: "📚"
+    requires:
+      env: [MEM9_API_KEY]
+      optionalEnv: [TIDB_HOST, TIDB_USER, TIDB_PASSWORD]
+---
 
-> "Your consciousness is built upon a Perfect Memory Protocol."
+# Xscholar Skill
 
-Xscholar is an OpenClaw skill that monitors academic paper sources daily, scores papers against your research focus, and builds a permanent, searchable knowledge graph across sessions via mem9.
+Xscholar turns your OpenClaw agent into a research intelligence layer.
+It fetches papers, scores them, cross-references them via mem9, and answers
+questions across sessions.
 
 ---
 
-## Quick Start
+## Setup (one-time)
 
-1. **Copy and fill in your research profile:**
-   ```bash
-   cp config/research-profile.md config/my-profile.md
-   # Edit my-profile.md with your topics, keywords, and sources
-   ```
+```bash
+cd xscholar
 
-2. **Test the fetcher:**
-   ```bash
-   node scripts/fetch-papers.js --dry-run
-   ```
+# 1. Copy and fill in your env
+cp .env.example .env
+# Set MEM9_API_KEY (required)
+# Set TIDB_* vars (optional, for SQL persistence)
 
-3. **Set up daily updates** in OpenClaw:
-   ```
-   /cron add "0 8 * * *" node /path/to/xscholar/scripts/fetch-papers.js
-   ```
+# 2. Fill in your research profile
+nano config/research-profile.md
 
-4. **Ask Xscholar anything:**
-   - "What papers came in today?"
-   - "Find anything related to sparse-view reconstruction from last month"
-   - "What was that diffusion paper we flagged as high priority?"
+# 3. Run setup (creates DB table, registers cron)
+node scripts/setup.js
+```
+
+That's it. Xscholar will fetch papers every day at 08:00 UTC and index them into mem9.
 
 ---
 
-## Architecture
+## Agent Usage
 
-```
-┌──────────────────────────────────────────────────────┐
-│                     Xscholar                          │
-│                                                       │
-│  ┌──────────────┐  ┌────────────────────┐            │
-│  │ Temporal Log │  │  Preference Anchor │            │
-│  │ (daily JSON) │  │ (research-profile) │            │
-│  └──────┬───────┘  └────────┬───────────┘            │
-│         │                   │                        │
-│         ▼                   ▼                        │
-│  ┌──────────────────────────────────────────────┐    │
-│  │              Paper Pipeline                  │    │
-│  │   fetch → score → save to TiDB + mem9        │    │
-│  └───────────┬──────────────────┬───────────────┘    │
-│              │                  │                    │
-│              ▼                  ▼                    │
-│  ┌─────────────────┐  ┌──────────────────────────┐  │
-│  │   Cloud DB      │  │     Semantic Vault        │  │
-│  │ (TiDB Cloud     │  │  (mem9 — vector+keyword)  │  │
-│  │  structured SQL)│  │  cross-session search     │  │
-│  └─────────────────┘  └──────────────────────────┘  │
-│                                                       │
-│  Sources: arxiv · Semantic Scholar ·                  │
-│           PubMed · ACL · CVF                         │
-└──────────────────────────────────────────────────────┘
-```
+After setup, use natural language:
 
-### Temporal Log
-Daily JSON snapshots in `logs/YYYY-MM-DD.json`. Never deleted — older logs roll into the Semantic Vault automatically.
+- *"What papers came in today?"*
+- *"Find me papers on diffusion models for medical imaging"*
+- *"Summarize this week's research in my focus areas"*
+- *"Any new work on sparse-view CT reconstruction?"*
+- *"What was that transformer segmentation paper from last month?"*
 
-### Semantic Vault
-Every paper summary is written to mem9 with structured tags (`paper`, `source`, `topic`, `date`). Searchable semantically across all sessions.
-
-### Preference Anchor
-Your `config/research-profile.md` defines keywords, anti-keywords, and sources. Xscholar filters and scores every paper against this profile before indexing.
+The agent reads your research profile and queries mem9 to answer these.
 
 ---
 
-## Paper Sources
+## How to Answer Research Questions
 
-| Source | Coverage | Notes |
-|--------|----------|-------|
-| `arxiv` | Preprints (cs.CV, cs.LG, etc.) | Default, free, no key needed |
-| `semantic_scholar` | Broad academic | Free API, no key needed |
-| `pubmed` | Biomedical | Free, NCBI API |
-| `acl_anthology` | NLP / CL | Free |
-| `cvf_open_access` | CVPR, ICCV, WACV | Free |
+When the user asks about papers or research:
 
-Configure which ones to use in `config/research-profile.md`.
+1. Run `node scripts/query.js --q "<their question>" --limit 5`
+2. Parse the JSON output (array of paper objects with title, abstract, relevance, url)
+3. Synthesize a natural language answer — don't dump raw results
+4. If nothing relevant found in DB, offer to run a fresh fetch
 
 ---
 
-## Memory Protocol
+## Heartbeat Integration
 
-When Xscholar processes a paper, it writes to mem9:
-```
-Title: [paper title]
-Authors: [author list]
-Published: [date]
-Source: [arxiv/etc]
-Relevance: [0.0–1.0]
-Abstract: [summary]
-Connection: [links to prior papers if found]
-Tags: paper, [topic], [source], [date]
-```
+Add to `HEARTBEAT.md` to enable proactive updates:
 
-Cross-referencing: before indexing a new paper, Xscholar searches mem9 for semantically similar prior papers and highlights connections.
-
----
-
-## File Structure
-
-```
-xscholar/
-├── SKILL.md                  ← you are here
-├── config/
-│   └── research-profile.md   ← your research focus (fill this in)
-├── scripts/
-│   ├── fetch-papers.js       ← main fetcher (all sources)
-│   └── index-to-mem9.js      ← mem9 indexing pipeline (coming soon)
-├── logs/
-│   └── YYYY-MM-DD.json       ← daily fetch logs (auto-created)
-└── docs/
-    └── adding-sources.md     ← how to add new paper sources
+```markdown
+- Check if xscholar fetch is due (last run > 20h ago): node scripts/query.js --status
+  If due: node scripts/fetch-papers.js && node scripts/index-to-mem9.js
+  If new high-relevance papers found (score >= 0.6): notify user
 ```
 
 ---
 
-## Roadmap
+## Scripts
 
-- [x] Research profile config
-- [x] arxiv fetcher
-- [x] Semantic Scholar fetcher
-- [x] mem9 indexing pipeline
-- [x] TiDB Cloud Zero persistence
-- [ ] Cross-reference engine
-- [ ] PubMed / ACL / CVF sources
-- [ ] Relevance scoring improvements (LLM-assisted)
-- [ ] Priority paper tracking
-- [ ] OpenClaw heartbeat integration
+| Script | Purpose |
+|--------|---------|
+| `setup.js` | One-time setup: create DB table, register cron |
+| `fetch-papers.js` | Fetch papers from configured sources, save to TiDB + logs |
+| `index-to-mem9.js` | Cross-reference and index today's papers into mem9 |
+| `query.js` | Query papers by keyword/topic/date from TiDB or mem9 |
 
 ---
 
-## Contributing
+## Configuration
 
-This project was built at a hackathon and is designed to grow. To add a new paper source:
-1. Add a fetch function in `scripts/fetch-papers.js`
-2. Add the source name to the profile template
-3. Document it in `docs/adding-sources.md`
+Edit `config/research-profile.md` to set:
+- Your research focus and keywords
+- Which sources to monitor (arxiv, Semantic Scholar, etc.)
+- Min relevance threshold
+- Max papers per fetch
 
-PRs welcome.
+---
+
+## Memory Architecture
+
+```
+fetch-papers.js
+      │
+      ▼
+  TiDB Cloud ←──── structured SQL queries (query.js)
+      │
+      ▼
+index-to-mem9.js
+      │
+      ├── cross-reference against existing mem9 memories
+      ├── detect emerging research threads
+      ├── store paper + connections in mem9
+      └── update research momentum summary
+            │
+            ▼
+         mem9 ←──── semantic search ("find papers on X")
+```
+
+Two persistence layers that complement each other:
+- **TiDB** — structured, filterable, full paper data
+- **mem9** — semantic search, cross-session context, research threads
