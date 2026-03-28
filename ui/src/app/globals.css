@@ -2,11 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #0a0a0f;
+  background: #07070f;
   color: #e2e8f0;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.star-twinkle {
+  animation: twinkle var(--twinkle-dur, 3s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
+.panel-fade-in {
+  animation: fade-in 0.25s ease-out forwards;
 }

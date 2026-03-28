@@ -18,7 +18,7 @@ export interface Paper {
   abstract: string;
   url: string;
   source: string;
-  published_at: string | null;
+  published_at: string | Date | null;
   relevance: number;
   tags: string;
   fetched_at?: string;

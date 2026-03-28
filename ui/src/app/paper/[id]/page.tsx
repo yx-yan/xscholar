@@ -39,7 +39,7 @@ export default async function PaperPage({ params }: { params: { id: string } }) 
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-slate-500">
         <span>{paper.authors}</span>
-        {paper.published_at && <span>{paper.published_at.slice(0, 10)}</span>}
+        {paper.published_at && <span>{String(paper.published_at).slice(0, 10)}</span>}
         <span className="bg-slate-800 px-2 py-0.5 rounded text-slate-400">{paper.source}</span>
         <span className={`font-mono font-medium ${scoreColor}`}>
           relevance: {paper.relevance.toFixed(2)}

@@ -33,7 +33,7 @@ function Tags({ raw }: { raw: string }) {
 export default function PaperCard({ paper }: { paper: Paper }) {
   const [expanded, setExpanded] = useState(false);
   const encodedId = encodeURIComponent(paper.id);
-  const date = paper.published_at ? paper.published_at.slice(0, 10) : "";
+  const date = paper.published_at ? String(paper.published_at).slice(0, 10) : "";
 
   return (
     <div className="border border-slate-800 rounded-lg p-4 hover:border-slate-600 transition-colors bg-slate-900/40">
