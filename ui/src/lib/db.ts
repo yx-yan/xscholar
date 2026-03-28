@@ -25,6 +25,7 @@ export interface Paper {
 }
 
 export interface QueryOptions {
+  q?: string;
   source?: string;
   minRelevance?: number;
   limit?: number;
@@ -32,10 +33,11 @@ export interface QueryOptions {
 }
 
 export async function getPapers(opts: QueryOptions = {}): Promise<Paper[]> {
-  const { source, minRelevance, limit = 50, since } = opts;
+  const { q, source, minRelevance, limit = 50, since } = opts;
   const conditions: string[] = [];
   const params: unknown[] = [];
 
+  if (q) { conditions.push("(title LIKE ? OR abstract LIKE ? OR authors LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   if (source) { conditions.push("source = ?"); params.push(source); }
   if (minRelevance != null) { conditions.push("relevance >= ?"); params.push(minRelevance); }
   if (since) { conditions.push("published_at >= ?"); params.push(since); }

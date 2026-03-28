@@ -355,14 +355,13 @@ export default function StarField({ papers }: { papers: Paper[] }) {
         onTouchEnd={handleTouchEnd}
       />
 
-      {/* Header */}
+      {/* Header — hidden when sidebar open */}
       <div className="absolute top-4 left-5 z-10 pointer-events-none">
-        <div className="text-white text-lg font-bold tracking-wide">⚡ Xscholar</div>
         <div className="text-slate-500 text-xs mt-0.5">{papers.length} papers · scroll to zoom · click a star</div>
       </div>
 
       {/* Controls */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+      <div className="absolute top-4 right-36 z-10 flex gap-2">
         <button
           onClick={() => { zoomRef.current = Math.min(5, zoomRef.current * 1.3); }}
           className="w-8 h-8 rounded-full text-slate-300 hover:text-white text-lg flex items-center justify-center transition-colors"
